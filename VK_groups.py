@@ -20,7 +20,7 @@ def get_groups_set(base_params, friend_list, group_id_set):
     params = base_params.copy()
     backup_params = base_params.copy()
     for friends in friend_list:
-        print(f'Идёт проверка групп пользователя # {count1 + 1}')
+        print(f'Идёт проверка групп пользователя # {count + 1}')
         params['user_id'] = friends
         resp3 = requests.get(url='https://api.vk.com/method/groups.get/', params=params)
         try:
@@ -72,10 +72,11 @@ def get_unique_groups(user_id=input('Введите user id '), token=input('В�
     try:
         needed_set = get_raw_group_set(base_params)
     except Exception as e:
-        if resp1.json()['error']['error_code'] == 5:
+        print(e)
+        if requests.get(url='https://api.vk.com/method/groups.get/', params=base_params).json()['error']['error_code'] == 5:
             print('Введен неверный токен')
             return
-        elif resp1.json()['error']['error_code'] == 100:
+        elif requests.get(url='https://api.vk.com/method/groups.get/', params=base_params).json()['error']['error_code'] == 100:
             print('Введён неверный формат данных токена или id')
             return
     friend_list = get_friend_list(base_params)
