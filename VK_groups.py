@@ -3,21 +3,25 @@ import time
 import json
 
 
-def get_username(username, params):
+def ensure_id(params):
     resp = requests.get(url='https://api.vk.com/method/users.get', params=params)
     try:
-        if resp.json()['response'][0]['first_name'] == username.split()[0]:
-            if resp.json()['response'][0]['last_name'] == username.split()[1]:
-                pass
-            else:
-                print('Введена неверная фамииля')
-                return False
-        else:
-            print('Введено неверное имя')
-            return False
+        user_id = resp.json()['response'][0]['id']
+        params.pop('user_ids')
+        params['user_id'] = user_id
     except Exception as e:
-        print('Токен не действителен для данного username')
-        return False
+        if resp.json()['error']['error_code'] == 5:
+            print('Введен неверный токен')
+            return False
+        elif resp.json()['error']['error_code'] == 100:
+            print('Введён неверный формат данных токена или id')
+            return False
+        elif resp.json()['error']['error_code'] == 113:
+            print('Введён несуществующий user id')
+            return False
+        else:
+            print(resp.json()['error']['error_msg'])
+            return False
     return True
 
 
@@ -80,29 +84,17 @@ def write_file_json(to_json, file_name):
     return
 
 
-def get_unique_groups(username=input('Введите username пользователя '), user_id=input('Введите user id '),
+def get_unique_groups(user_ids=input('Введите user id/username '),
                       token=input('Введите token '),
                       file_name=input('Введите название файла ')):
     base_params = {
         'access_token': token,
-        'user_id': user_id,
+        'user_ids': user_ids,
         'v': '5.110'
     }
-    if get_username(username, base_params) == True:
-        pass
-    else:
+    if not ensure_id(base_params):
         return
-    try:
-        needed_set = get_raw_group_set(base_params)
-    except Exception as e:
-        if requests.get(url='https://api.vk.com/method/groups.get/', params=base_params).json()['error'][
-            'error_code'] == 5:
-            print('Введен неверный токен')
-            return
-        elif requests.get(url='https://api.vk.com/method/groups.get/', params=base_params).json()['error'][
-            'error_code'] == 100:
-            print('Введён неверный формат данных токена или id')
-            return
+    needed_set = get_raw_group_set(base_params)
     friend_list = get_friend_list(base_params)
     final_set = get_groups_set(base_params, friend_list, needed_set)
     time.sleep(2.0)
